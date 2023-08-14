@@ -1,0 +1,5 @@
+apiVersion: kots.io/v1beta1
+kind: HelmChart
+metadata:
+  name: $NAMESPACE
+spec:
