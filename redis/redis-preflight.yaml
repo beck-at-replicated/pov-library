@@ -1,0 +1,25 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: Preflight
+metadata:
+  name: $NAMESPACE
+  annotations:
+    kots.io/exclude: "true"
+spec:
+  collectors:
+    - clusterInfo: {}
+    - clusterResources: {}
+    - redis:
+        exclude: 'repl{{ ConfigOptionEquals "redis" "redis_embedded" }}'
+        collectorName: redis
+        uri: 'redis://{{repl ConfigOption "redis_user" }}:{{repl ConfigOption "external_redis_password" }}@{{repl ConfigOption "redis_host" }}:{{repl ConfigOption "redis_port" }}'
+  analyzers:
+    - redis:
+        exclude: 'repl{{ ConfigOptionEquals "redis" "redis_embedded" }}'
+        checkName: "Must have a Redis database"
+        collectorName: redis
+        outcomes:
+          - fail:
+              when: connected == false
+              message: "Cannot connect to Redis server"
+          - pass:
+              message: "Redis is ready"

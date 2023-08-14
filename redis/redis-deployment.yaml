@@ -1,0 +1,47 @@
+apiVersion: kots.io/v1beta1
+kind: HelmChart
+metadata:
+  name: $NAMESPACE
+spec:
+  chart:
+    name: $CHART_NAME
+    chartVersion: $CHART_VERSION
+  helmVersion: v3
+  useHelmInstall: true
+  values:
+    imagePullSecrets:
+      - name: $REMOTE_PULL_SECRET
+      - name: $LOCAL_PULL_SECRET
+    config:
+      redis:
+        REDIS_HOST: '{{repl ConfigOption `redis_host`}}'
+        REDIS_PORT: '{{repl ConfigOption `redis_port`}}'
+        REDIS_USERNAME: '{{repl ConfigOption `redis_user`}}'
+    images: 
+        IMAGE_REDIS: '{{repl LocalImageName "$LOCAL_IMAGE_NAME" }}'
+  optionalValues:
+    - when: 'repl{{ ConfigOptionEquals `redis` `redis_embedded`}}'
+      recursiveMerge: true
+      values:
+        config:
+          redis:
+            REDIS_TYPE: 'embedded'
+            REDIS_PASSWORD: '{{repl ConfigOption `redis_password`}}'
+            REDIS_PERSISTENCE_SIZE: '{{repl ConfigOption `redis_disk_size`}}'
+    - when: 'repl{{ ConfigOptionEquals `redis` `redis_external`}}'
+      recursiveMerge: true
+      values:
+        config:
+          redis:
+            REDIS_TYPE: 'external'
+            REDIS_PASSWORD: '{{repl ConfigOption `external_redis_password`}}'
+    - when: 'repl{{ and (ConfigOptionEquals `redis` `redis_embedded`) (ConfigOptionEquals `redis_resources` `redis_resources_custom`) }}'
+      recursiveMerge: true
+      values:
+        config:
+          redis:
+            REDIS_LIMITS_MEMORY: '{{repl ConfigOption `resources_redis_limit_memory`}}'
+            REDIS_REQUESTS_MEMORY: '{{repl ConfigOption `resources_redis_request_memory`}}'
+            REDIS_LIMITS_CPU: '{{repl ConfigOption `resources_redis_limit_cpu`}}'
+            REDIS_REQUESTS_CPU: '{{repl ConfigOption `resources_redis_request_cpu`}}'
+
